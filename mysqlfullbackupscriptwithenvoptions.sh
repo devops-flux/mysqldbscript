@@ -2,15 +2,14 @@
 
 function checkenvfile() {
 
-if [ -f ".env" ]; then
-  source .env
-else
-  echo "Error: .env file not found"
-  exit 1
-fi
+    if [ -f ".env" ]; then
+        source .env
+    else
+        echo "Error: .env file not found"
+        exit 1
+    fi
 
 }
-
 
 function checkexistingbackup_dirandcreatenew() {
 
@@ -70,12 +69,10 @@ function checkexistingbackupcompressfilenameandcreatenew() {
 
 function databasedump() {
 
-
     if [ -z "$DB_NAME" ] || [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_HOST" ] || [ -z "$DB_PORT" ]; then
-            echo "Error: DB_NAME,DB_USERNAME, DB_PASSWORD, DB_HOST and DB_PORT must be set in .env file"
+        echo "Error: DB_NAME,DB_USERNAME, DB_PASSWORD, DB_HOST and DB_PORT must be set in .env file"
         exit 1
     fi
-
 
     backup_dir="/opt/bkp-$(date +%y%m%d)"
     db_user_name=$DB_USERNAME
@@ -88,23 +85,21 @@ function databasedump() {
 
     if [ -d "$backup_dir" ]; then
 
-        
-            
-            mysqldump --lock-all-tables --set-gtid-purged=OFF --user=${db_user_name} --password=${db_password}  ${db_name} > ${backup_dir}/${db_name}.sql
+        mysqldump --lock-all-tables --set-gtid-purged=OFF --user=${db_user_name} --password=${db_password} ${db_name} >${backup_dir}/${db_name}.sql
 
+        if [ $? -eq 0 ]; then
+            echo "database ${db_name}  dump for  was completed successfully."
+        else
+            echo "database ${db_name}  dump was failed. so removing directory  ${backup_dir}"
+            rm -rf ${backup_dir}
             if [ $? -eq 0 ]; then
-                echo "database ${db_name}  dump for  was completed successfully."
+                echo "${backup_dir} was  successfully removed"
             else
-                echo "database ${db_name}  dump was failed. so removing directory  ${backup_dir}"
-                rm -rf ${backup_dir}
-                if [ $? -eq 0 ]; then
-                    echo "${backup_dir} was  successfully removed"
-                else
-                    echo "${backup_dir} was failed to remove, remove it manually"
-                    exit 1
-                fi
+                echo "${backup_dir} was failed to remove, remove it manually"
                 exit 1
             fi
+            exit 1
+        fi
 
         checkexistingbackupcompressfilenameandcreatenew
 
@@ -115,43 +110,40 @@ function databasedump() {
 
 }
 
-
 function copybackupfiletonas() {
-
 
     databasedump
     compressedfile=/opt/bkp-$(date +%y%m%d).7z
 
-    if [ -f $compressedfile ]; then 
+    if [ -f $compressedfile ]; then
 
-    $compressedfile for database backup file is found copying it to nas server.
+        $compressedfile for database backup file is found copying it to nas server.
 
-   if [ -z "$NAS_USERNAME" ] || [ -z "$NAS_IP" ] || [ -z "$NAS_FOLDER_PATH_FOR_BACKUP_FILE" ]; then
+        if [ -z "$NAS_USERNAME" ] || [ -z "$NAS_IP" ] || [ -z "$NAS_FOLDER_PATH_FOR_BACKUP_FILE" ]; then
             echo "Error: NAS_USERNAME, NAS_IP AND NAS_FOLDER_PATH_FOR_BACKUP_FILE must be set in .env file"
-        exit 1
-    fi
+            exit 1
+        fi
 
-    scp -pr $compressedfile  $NAS_USERNAME@${NAS_IP}:/$NAS_FOLDER_PATH_FOR_BACKUP_FILE 
+        scp -pr $compressedfile $NAS_USERNAME@${NAS_IP}:/$NAS_FOLDER_PATH_FOR_BACKUP_FILE
 
-    if [ $? -eq 0 ]; then
-     echo "$compressedfile backup file is copied successfully completed on NAS SERVER ${NAS_IP}"
- else
-     echo "$compressedfile backup file is failed to copy  on NAS SERVER ${NAS_IP} please check manually"
-     exit 1
- fi
+        if [ $? -eq 0 ]; then
+            echo "$compressedfile backup file is copied successfully completed on NAS SERVER ${NAS_IP}"
+        else
+            echo "$compressedfile backup file is failed to copy  on NAS SERVER ${NAS_IP} please check manually"
+            exit 1
+        fi
 
     else
-        echo  "$compressedfile backup file is  not found, so not copy  on NAS SERVER ${NAS_IP} please check manually"
+        echo "$compressedfile backup file is  not found, so not copy  on NAS SERVER ${NAS_IP} please check manually"
         exit 1
 
-
+    fi
 
 }
 
-
 function main() {
 
-copybackupfiletonas
+    copybackupfiletonas
 
 }
 
@@ -159,4 +151,4 @@ main
 
 #####################################################################
 # make sure .env file present with required username, password, dbhost,db port, nasip , nasusername,nasfolder path where you want to copt your file.
-#./mysqlfullbackup.sh 
+#./mysqlfullbackup.sh
