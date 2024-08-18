@@ -158,5 +158,5 @@ copybackupfiletonas
 main
 
 #####################################################################
-# make sure .env file present with required username, password, dbhost,db port
+# make sure .env file present with required username, password, dbhost,db port, nasip , nasusername,nasfolder path where you want to copt your file.
 #./mysqlfullbackup.sh 
